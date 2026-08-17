@@ -6,7 +6,12 @@ Built as a research platform, not a demo: ground truth, measurements, detections
 
 ## Status
 
-Early scaffold — repository structure and interfaces only. No simulation logic is implemented yet; it is being built incrementally, one pipeline phase at a time (see `docs/ARCHITECTURE.md` for the phase plan).
+The full simulation pipeline is real and working end-to-end: **Scenario → Target Generator → Radar Model → Detection → Tracking (Kalman / EKF / particle filter) → Sensor Fusion → Metrics**, all built incrementally, one phase at a time, each with its own tests (see `docs/ARCHITECTURE.md` for the phase-by-phase build log).
+
+- **Done:** `core`, `targets`, `io` (Phase 1) · `radar` (Phase 2) · `signals` (Phase 3, standalone toolkit) · `detection` (Phase 4) · `tracking` — Kalman filter + association + `Tracker` (Phase 5a), EKF + particle filter (Phase 5b) · `metrics` (Phase 6) · `fusion` (Phase 7) · `cli` (Phase 8a) — run `radarsim <scenario.yaml>` to try it
+- **Not yet built:** `api` (Phase 8b, FastAPI service), `dashboard` (Phase 8c, React frontend)
+
+Run `uv run radarsim scenarios/basic/two_targets.yaml` for a working example (see [Usage](#usage) below).
 
 ## Pipeline
 
@@ -27,7 +32,7 @@ Scenario (YAML) → Target Generator → Radar Model → Signal Processing → D
 
 ## Quickstart
 
-Clone the repo, then install and verify the scaffold:
+Clone the repo, then install and verify the setup:
 
 ```bash
 git clone https://github.com/coderag10/radarsim-lab.git
@@ -41,7 +46,7 @@ uv sync --extra dev          # install runtime + dev dependencies into .venv
 uv run pytest                # run the test suite
 uv run ruff check .          # lint
 uv run mypy src               # type-check
-uv run radarsim               # smoke-test the CLI entrypoint
+uv run radarsim --help        # smoke-test the CLI entrypoint
 ```
 
 **With plain pip + venv:**
@@ -53,19 +58,42 @@ pip install -e ".[dev]"
 pytest
 ruff check .
 mypy src
-radarsim
+radarsim --help
 ```
 
-Everything here is a stub at this stage (see [Status](#status)), so `pytest` currently only verifies the package imports cleanly, and `radarsim` prints a placeholder message — that's expected until Phase 1 lands.
+## Usage
+
+```bash
+uv run radarsim scenarios/basic/two_targets.yaml
+```
+
+```
+Scenario: scenarios/basic/two_targets.yaml
+  Duration: 5.0s  Timestep: 1.0s  Seed: 42  Targets: 2
+
+Sensor: radar-1 @ (0.0, 0.0)
+
+Tracking results (t=5.0s):
+  ID        Status    Position            Velocity
+  track-0   ACTIVE    (20.03, 25.15)      (1.87, -1.00)
+  track-1   ACTIVE    (-15.10, 25.02)     (1.07, 2.07)
+
+Metrics:
+  Detection probability: 100.0%
+  Position RMSE:          0.130
+```
+
+Add `--format json` for machine-readable output, or see `radarsim --help` for sensor position/noise/detection-threshold flags.
 
 ## Repository layout
 
-- `src/radarsim/` — the simulation engine (core, targets, radar, signals, detection, tracking, fusion, metrics, io)
-- `src/radarsim/api/`, `src/radarsim/cli/` — service and command-line entrypoints (later phases)
-- `dashboard/` — React + TypeScript visualization frontend (later phase)
+- `src/radarsim/` — the simulation engine: `core`, `targets`, `radar`, `signals`, `detection`, `tracking`, `fusion`, `metrics`, `io`, `types` (all implemented)
+- `src/radarsim/cli/` — command-line entrypoint (implemented, see [Usage](#usage))
+- `src/radarsim/api/` — FastAPI service exposing simulation runs (not yet built, Phase 8b)
+- `dashboard/` — React + TypeScript visualization frontend (not yet built, Phase 8c)
 - `scenarios/` — YAML scenario definitions
 - `experiments/` — notebooks, experiment configs, and results
-- `tests/` — unit, integration, and regression tests
+- `tests/` — unit, integration, and regression tests (140+ tests across every implemented module)
 - `benchmarks/` — performance benchmarks for computationally expensive algorithms
 
-See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for module responsibilities and data contracts.
+See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for module responsibilities, data contracts, and the phase-by-phase build log.

@@ -16,7 +16,7 @@ Each arrow is a typed contract (see [Data contracts](#data-contracts)), not a sh
 
 ## The one rule that matters
 
-**Ground truth, measurements, detections, and track estimates are separate types.** A target's true `GroundTruth` state exists only inside the simulation (`targets`, `core`). The moment it's "sensed" it becomes a `RadarMeasurement` — noisy, partial, and that's all any downstream algorithm (`detection`, `tracking`, `fusion`) ever sees or is allowed to import. Only `metrics` is permitted to hold both a `TrackEstimate` and its corresponding `GroundTruth` side by side, because comparing them is literally its job (RMSE, detection probability, false-alarm rate, track continuity).
+**Ground truth, measurements, detections, and track estimates are separate types.** A target's true `GroundTruth` state exists only inside the simulation (`targets`, `core`). The moment it's "sensed" it becomes a `RadarMeasurement` — noisy, partial, and that's all any downstream algorithm (`detection`, `tracking`, `fusion`) ever sees or is allowed to import. Only `metrics` is permitted to hold both a `TrackEstimate` and its corresponding `GroundTruth` side by side, because comparing them is literally its job (position RMSE, detection probability, false-alarm rate).
 
 If an algorithm module needs to import `radarsim.types.state.GroundTruth`, that's a design smell — it means the algorithm is being handed the answer it's supposed to be estimating.
 
@@ -32,10 +32,10 @@ If an algorithm module needs to import `radarsim.types.state.GroundTruth`, that'
 | `detection` | Signal / measurement → candidate detection with confidence & SNR | `RadarMeasurement` or processed signal | `Detection` | `tracking`, `GroundTruth` |
 | `tracking` | Prediction, data association, state estimation (Kalman / EKF / particle filters) | `Detection` stream | `TrackEstimate` | `GroundTruth` |
 | `fusion` | Combine tracks/detections across multiple sensors | multiple `TrackEstimate`/`Detection` streams | fused `TrackEstimate` | — |
-| `metrics` | RMSE, detection probability, false-alarm rate, precision/recall, latency | `TrackEstimate` **and** `GroundTruth` | scalar/series metrics | — |
+| `metrics` | Position RMSE (optimal matching), detection probability, false-alarm rate | `TrackEstimate` **and** `GroundTruth` | scalar metrics | — |
 | `io` | Scenario YAML loading/validation, run (de)serialization | YAML/JSON | scenario config, `types` objects | algorithm internals |
-| `api` | FastAPI service exposing simulation runs (Phase 7) | HTTP requests | JSON | — |
-| `cli` | Command-line entrypoint | argv | stdout / files | — |
+| `cli` | Command-line entrypoint — run a scenario end-to-end, print a table or JSON summary | argv | stdout / exit code | — |
+| `api` | FastAPI service exposing simulation runs (Phase 8b, not yet built) | HTTP requests | JSON | — |
 
 ## Data contracts
 
@@ -86,13 +86,30 @@ Every simulation run is driven by a single seeded RNG owned by `core.rng` and th
 
 ## Phased build order
 
-1. **Simulation core** — `core` (clock, RNG, world), `targets` (motion models), `io` (scenario loading)
-2. **Radar model** — `radar` (true state → noisy measurement)
-3. **Signal processing** — `signals` (sampling, noise, FFT, filters, range-Doppler)
-4. **Detection** — `detection` (thresholds, confidence, SNR)
-5. **Tracking** — `tracking` (prediction, association, Kalman/EKF/particle filters)
-6. **Ground truth & metrics** — `metrics` (RMSE, Pd, FAR, track continuity) plus multi-target association algorithms
-7. **Sensor fusion** — `fusion`
-8. **Dashboard & API** — `api`, `cli`, `dashboard/`
+Each phase is proposed, reviewed, and implemented separately (one plan, one commit, its own tests). Large phases get split (5 and 8 below) rather than bundled, the same way the whole project is built incrementally rather than all at once.
 
-Each phase is proposed, reviewed, and implemented separately — see the repository's plan history rather than assuming everything above is already built.
+1. ✅ **Simulation core** — `core` (clock, RNG, world), `targets` (motion models), `io` (scenario loading)
+2. ✅ **Radar model** — `radar` (true state → noisy measurement)
+3. ✅ **Signal processing** — `signals` (sampling, noise, FFT, filters, range-Doppler). Standalone toolkit, not wired into `radar` (see [Signal processing vs. radar](#signal-processing-vs-radar) below)
+4. ✅ **Detection** — `detection` (thresholds, confidence, SNR). Required retroactively extending `radar`/`types` with an `snr` field once it became clear a threshold detector needs a real signal-strength quantity to threshold on
+5. **Tracking** — `tracking` (prediction, association, Kalman/EKF/particle filters), split in two:
+   - ✅ **5a** — `KalmanFilter` + `NearestNeighbor` association + a new `Tracker` orchestrator (not originally stubbed, but required to run anything). Operates in Cartesian state via a polar→Cartesian "converted measurement" step
+   - ✅ **5b** — `ExtendedKalmanFilter` (operates directly on polar measurements, no conversion) + `ParticleFilter`. Neither is wired into `Tracker` yet — see [Filters not wired into Tracker](#filters-not-wired-into-tracker)
+6. ✅ **Ground truth & metrics** — `metrics` (RMSE via optimal bipartite matching, detection probability, false-alarm rate). "Track continuity" (ID-switch rate) from the original scope note is deliberately deferred — it needs multi-timestep track-to-truth association, a bigger design than the other three metrics
+7. ✅ **Sensor fusion** — `fusion` (`fuse_estimates`, `match_tracks`). Building its integration test exposed and fixed a real bug: `polar_to_cartesian_measurement` had silently assumed the sensor sat at the world origin (see the Phase 7 commit)
+8. **Dashboard & API** — `api`, `cli`, `dashboard/`, split in three:
+   - ✅ **8a** — `cli`: `radarsim <scenario.yaml>` runs the full pipeline and prints a table or JSON summary
+   - ⬜ **8b** — `api`: FastAPI service exposing simulation runs
+   - ⬜ **8c** — `dashboard/`: React + TypeScript frontend
+
+## Signal processing vs. radar
+
+`signals` (Phase 3) is a standalone sample-domain toolkit — FFT, noise, filters, range-Doppler maps — deliberately **not** wired into `radar.RadarModel`, which produces measurements analytically (range/angle/radial-velocity computed directly from geometry, not from a simulated waveform). Connecting them would mean simulating actual chirp/pulse waveforms, a materially larger project than anything built so far.
+
+## Filters not wired into Tracker
+
+`Tracker` (Phase 5a) only accepts a `KalmanFilter` and hardcodes the KF-specific polar→Cartesian measurement conversion. `ExtendedKalmanFilter` and `ParticleFilter` (Phase 5b) are validated standalone instead:
+- EKF against the real two-target scenario, operating directly on polar measurements (a manual predict/update loop, not through `Tracker`)
+- The particle filter against a synthetic linear-Gaussian problem, where its estimate should converge to the same posterior a Kalman filter computes exactly — and does, within 0.01 position / 0.001 velocity using 5000 particles
+
+Making `Tracker` filter-agnostic (an injected measurement-adapter alongside the filter) and giving `ParticleFilter` a per-track home in `Tracker`'s one-shared-filter design are both legitimate future work, not attempted yet.
