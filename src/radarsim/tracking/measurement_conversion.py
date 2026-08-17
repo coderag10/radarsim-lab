@@ -5,10 +5,15 @@ import numpy as np
 from radarsim.types import RadarMeasurement
 
 
-def polar_to_cartesian_measurement(measurement: RadarMeasurement) -> tuple[np.ndarray, np.ndarray]:
+def polar_to_cartesian_measurement(
+    measurement: RadarMeasurement, sensor_position: np.ndarray
+) -> tuple[np.ndarray, np.ndarray]:
     """Convert a polar `RadarMeasurement` to an approximate Cartesian position measurement.
 
-    `x = range*cos(angle)`, `y = range*sin(angle)`. The returned
+    `x = sensor_x + range*cos(angle)`, `y = sensor_y + range*sin(angle)`
+    -- range/angle are sensor-relative, so `sensor_position` is required
+    to land in world-frame Cartesian coordinates (the frame
+    `radarsim.tracking.Tracker`'s state lives in). The returned
     covariance is the polar (range, angle) covariance linearized
     through this transform's Jacobian -- the standard "converted
     measurement" technique for feeding polar radar returns into a
@@ -21,7 +26,7 @@ def polar_to_cartesian_measurement(measurement: RadarMeasurement) -> tuple[np.nd
     r = measurement.range
     theta = measurement.angle
 
-    position = np.array([r * np.cos(theta), r * np.sin(theta)])
+    position = sensor_position + np.array([r * np.cos(theta), r * np.sin(theta)])
 
     sigma_range_sq = measurement.covariance[0, 0]
     sigma_angle_sq = measurement.covariance[2, 2]

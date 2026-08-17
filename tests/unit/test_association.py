@@ -32,7 +32,7 @@ def test_nearest_unclaimed_detection_within_gate_is_chosen() -> None:
     near = _detection(range_=10.1)
     far = _detection(range_=15.0)
 
-    association = NearestNeighbor(gate_threshold=1.0)
+    association = NearestNeighbor(gate_threshold=1.0, sensor_position=np.zeros(2))
     result = association.associate([track], [near, far])
 
     assert result["t1"] is near
@@ -42,7 +42,7 @@ def test_nothing_chosen_outside_gate() -> None:
     track = _track("t1", x=10.0, y=0.0)
     far = _detection(range_=50.0)
 
-    association = NearestNeighbor(gate_threshold=1.0)
+    association = NearestNeighbor(gate_threshold=1.0, sensor_position=np.zeros(2))
     result = association.associate([track], [far])
 
     assert result == {}
@@ -53,7 +53,7 @@ def test_greedy_claiming_first_track_wins_shared_detection() -> None:
     track_b = _track("b", x=10.5, y=0.0)
     detection = _detection(range_=10.0)
 
-    association = NearestNeighbor(gate_threshold=5.0)
+    association = NearestNeighbor(gate_threshold=5.0, sensor_position=np.zeros(2))
     result = association.associate([track_a, track_b], [detection])
 
     assert result == {"a": detection}

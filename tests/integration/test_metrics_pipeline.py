@@ -39,7 +39,8 @@ def test_metrics_over_full_pipeline() -> None:
     )
     tracker = Tracker(
         kalman_filter=kalman_filter,
-        association=NearestNeighbor(gate_threshold=10.0),
+        association=NearestNeighbor(gate_threshold=10.0, sensor_position=np.zeros(2)),
+        sensor_position=np.zeros(2),
         confirm_hits=3,
         max_misses=3,
     )

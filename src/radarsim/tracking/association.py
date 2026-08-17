@@ -24,17 +24,21 @@ class NearestNeighbor:
     Greedy, not an optimal assignment (no Hungarian algorithm): tracks
     are matched in list order, each claiming its nearest still-unclaimed
     detection. Distance is plain Euclidean, on positions converted from
-    each detection's polar measurement via `polar_to_cartesian_measurement`.
+    each detection's polar measurement via `polar_to_cartesian_measurement`
+    -- `sensor_position` is required for that conversion to land in
+    world-frame coordinates, so this instance is tied to one sensor.
     """
 
-    def __init__(self, gate_threshold: float) -> None:
+    def __init__(self, gate_threshold: float, sensor_position: np.ndarray) -> None:
         self.gate_threshold = gate_threshold
+        self.sensor_position = sensor_position
 
     def associate(
         self, tracks: list[TrackEstimate], detections: list[Detection]
     ) -> dict[str, Detection]:
         detection_positions = [
-            polar_to_cartesian_measurement(detection.measurement)[0] for detection in detections
+            polar_to_cartesian_measurement(detection.measurement, self.sensor_position)[0]
+            for detection in detections
         ]
         claimed: set[int] = set()
         assignment: dict[str, Detection] = {}

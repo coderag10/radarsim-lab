@@ -36,20 +36,24 @@ class Tracker:
     Assumes one fixed timestep baked into `kalman_filter`'s transition
     matrix (matching `SimulationClock`'s fixed-timestep design) -- it
     takes no `dt` itself, staying decoupled from simulation timing.
-    Processes one sensor's detections at a time; combining multiple
-    sensors is `radarsim.fusion`'s job, not this class's.
+    Processes one sensor's detections at a time (`sensor_position` is
+    required to convert that sensor's polar measurements into
+    world-frame Cartesian positions); combining multiple sensors is
+    `radarsim.fusion`'s job, not this class's.
     """
 
     def __init__(
         self,
         kalman_filter: KalmanFilter,
         association: AssociationStrategy,
+        sensor_position: np.ndarray,
         confirm_hits: int = 3,
         max_misses: int = 3,
         initial_velocity_variance: float = 100.0,
     ) -> None:
         self.kalman_filter = kalman_filter
         self.association = association
+        self.sensor_position = sensor_position
         self.confirm_hits = confirm_hits
         self.max_misses = max_misses
         self.initial_velocity_variance = initial_velocity_variance
@@ -81,7 +85,9 @@ class Tracker:
                     track.status = TrackStatus.LOST
                 continue
 
-            position, position_covariance = polar_to_cartesian_measurement(detection.measurement)
+            position, position_covariance = polar_to_cartesian_measurement(
+                detection.measurement, self.sensor_position
+            )
             track.state, track.covariance = self.kalman_filter.update(
                 track.state, track.covariance, position, measurement_noise=position_covariance
             )
@@ -99,7 +105,9 @@ class Tracker:
         return [self._to_estimate(track, timestamp) for track in self._tracks.values()]
 
     def _spawn_track(self, detection: Detection) -> None:
-        position, position_covariance = polar_to_cartesian_measurement(detection.measurement)
+        position, position_covariance = polar_to_cartesian_measurement(
+            detection.measurement, self.sensor_position
+        )
         covariance = np.zeros((4, 4))
         covariance[:2, :2] = position_covariance
         covariance[2, 2] = self.initial_velocity_variance

@@ -29,7 +29,8 @@ def _make_tracker(confirm_hits: int = 3, max_misses: int = 3) -> Tracker:
     )
     return Tracker(
         kalman_filter=kalman_filter,
-        association=NearestNeighbor(gate_threshold=5.0),
+        association=NearestNeighbor(gate_threshold=5.0, sensor_position=np.zeros(2)),
+        sensor_position=np.zeros(2),
         confirm_hits=confirm_hits,
         max_misses=max_misses,
     )
