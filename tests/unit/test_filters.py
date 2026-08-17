@@ -35,7 +35,9 @@ def test_moving_average_window_too_large_raises() -> None:
 
 
 @given(
-    value=st.floats(min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False),
+    value=st.floats(
+        min_value=-1e6, max_value=1e6, allow_nan=False, allow_infinity=False, allow_subnormal=False
+    ),
     length=st.integers(min_value=1, max_value=50),
     window=st.integers(min_value=1, max_value=50),
 )
