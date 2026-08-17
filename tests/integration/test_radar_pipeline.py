@@ -18,6 +18,7 @@ def test_radar_observes_world_ground_truth_zero_noise() -> None:
         sensor_id="radar-1",
         position=np.zeros(2),
         noise_std=np.zeros(3),
+        radar_constant=1.0,
         rng=SeededRNG(seed=config.seed).spawn("radar"),
     )
 
@@ -43,6 +44,7 @@ def test_radar_observes_world_ground_truth_with_noise_stays_close_to_truth() -> 
         sensor_id="radar-1",
         position=np.zeros(2),
         noise_std=noise_std,
+        radar_constant=1.0,
         rng=SeededRNG(seed=config.seed).spawn("radar"),
     )
 

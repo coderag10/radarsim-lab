@@ -22,3 +22,4 @@ class RadarMeasurement:
     radial_velocity: float
     angle: float
     covariance: np.ndarray
+    snr: float
