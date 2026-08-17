@@ -1,0 +1,33 @@
+
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+.venv/
+venv/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+dist/
+build/
+
+# experiments / results (generated, not source)
+experiments/results/*
+!experiments/results/.gitkeep
+
+CLAUDE.MD
+/.CLAUDE
+
+# Node / dashboard (Phase 7)
+dashboard/node_modules/
+dashboard/dist/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
