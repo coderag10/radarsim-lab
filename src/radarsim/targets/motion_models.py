@@ -29,7 +29,8 @@ class ConstantVelocityModel:
         acceleration: np.ndarray,
         dt: float,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        raise NotImplementedError
+        new_position = position + velocity * dt
+        return new_position, velocity, np.zeros_like(acceleration)
 
 
 class ConstantAccelerationModel:
@@ -42,4 +43,6 @@ class ConstantAccelerationModel:
         acceleration: np.ndarray,
         dt: float,
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-        raise NotImplementedError
+        new_position = position + velocity * dt + 0.5 * acceleration * dt**2
+        new_velocity = velocity + acceleration * dt
+        return new_position, new_velocity, acceleration

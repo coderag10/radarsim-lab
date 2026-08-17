@@ -15,7 +15,7 @@ class ConstantRCS:
     """A fixed RCS regardless of aspect angle -- the simplest useful model."""
 
     def __init__(self, value: float) -> None:
-        raise NotImplementedError
+        self._value = value
 
     def rcs(self, aspect_angle: float) -> float:
-        raise NotImplementedError
+        return self._value

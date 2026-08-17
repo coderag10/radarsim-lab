@@ -1,0 +1,20 @@
+# Two constant-velocity targets, matching the walkthrough example in
+# docs/ARCHITECTURE.md's design origins: a hand-verifiable fixture used
+# by tests/integration/test_world_run.py and tests/regression/test_basic_scenario.py.
+
+simulation:
+  duration: 5.0
+  timestep: 1.0
+  seed: 42
+
+targets:
+  - id: target-A
+    model: constant_velocity
+    position: [10.0, 30.0]
+    velocity: [2.0, -1.0]
+    rcs: 5.0
+  - id: target-B
+    model: constant_velocity
+    position: [-20.0, 15.0]
+    velocity: [1.0, 2.0]
+    rcs: 3.0

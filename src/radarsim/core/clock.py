@@ -17,12 +17,13 @@ class SimulationClock:
 
     def step(self) -> float:
         """Advance simulated time by one `timestep` and return the new time."""
-        raise NotImplementedError
+        self.time += self.timestep
+        return self.time
 
     def is_finished(self) -> bool:
         """Return True once `time` has reached `duration`."""
-        raise NotImplementedError
+        return self.time >= self.duration - 1e-9
 
     def reset(self) -> None:
         """Reset `time` to zero."""
-        raise NotImplementedError
+        self.time = 0.0
