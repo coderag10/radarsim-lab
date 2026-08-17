@@ -1,0 +1,27 @@
+.metrics-panel {
+  background: var(--panel-surface);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.metrics-panel-grid {
+  display: flex;
+  gap: 24px;
+}
+
+.stat-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-tile-label {
+  font-size: 12px;
+  color: var(--panel-text-muted);
+}
+
+.stat-tile-value {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: var(--panel-text);
+}

@@ -16,7 +16,7 @@ from radarsim.tracking.association import NearestNeighbor
 from radarsim.tracking.filters.kalman import KalmanFilter
 from radarsim.tracking.prediction import constant_velocity_transition
 from radarsim.tracking.tracker import Tracker
-from radarsim.types import TrackEstimate, TrackStatus
+from radarsim.types import GroundTruth, TrackEstimate, TrackStatus
 
 # Tracker/filter internals, not exposed as CLI flags -- the same values
 # validated across every integration test since Phase 5.
@@ -41,6 +41,7 @@ class RunResult:
     sensor_id: str
     sensor_position: tuple[float, float]
     tracks: list[TrackEstimate]
+    ground_truth: list[GroundTruth]
     detection_probability: float
     position_rmse: float | None
 
@@ -115,6 +116,7 @@ def run_scenario(
         sensor_id=_SENSOR_ID,
         sensor_position=(float(radar_position[0]), float(radar_position[1])),
         tracks=tracks,
+        ground_truth=history[-1],
         detection_probability=pd,
         position_rmse=rmse,
     )
@@ -131,6 +133,12 @@ def format_table(result: RunResult) -> str:
     ]
 
     timestamp = result.tracks[0].timestamp if result.tracks else result.duration
+
+    lines.append(f"Ground truth (t={timestamp}s):")
+    for truth in result.ground_truth:
+        lines.append(f"  {truth.target_id:<10}({truth.position[0]:.2f}, {truth.position[1]:.2f})")
+    lines.append("")
+
     lines.append(f"Tracking results (t={timestamp}s):")
     if not result.tracks:
         lines.append("  (no tracks)")
@@ -160,6 +168,13 @@ def format_json(result: RunResult) -> str:
         "seed": result.seed,
         "num_targets": result.num_targets,
         "sensor": {"id": result.sensor_id, "position": list(result.sensor_position)},
+        "ground_truth": [
+            {
+                "target_id": truth.target_id,
+                "position": [float(truth.position[0]), float(truth.position[1])],
+            }
+            for truth in result.ground_truth
+        ],
         "tracks": [
             {
                 "track_id": track.track_id,

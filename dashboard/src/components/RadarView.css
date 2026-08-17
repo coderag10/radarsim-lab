@@ -1,0 +1,122 @@
+.radar-view {
+  position: relative;
+  color-scheme: light;
+  --surface-1: #fcfcfb;
+  --text-primary: #0b0b0b;
+  --text-secondary: #52514e;
+  --text-muted: #898781;
+  --gridline: #e1e0d9;
+  --axis: #c3c2b7;
+  --status-good: #0ca30c;
+  --status-warning: #fab219;
+  --status-critical: #d03b3b;
+
+  background: var(--surface-1);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+@media (prefers-color-scheme: dark) {
+  .radar-view {
+    color-scheme: dark;
+    --surface-1: #1a1a19;
+    --text-primary: #ffffff;
+    --text-secondary: #c3c2b7;
+    --text-muted: #898781;
+    --gridline: #2c2c2a;
+    --axis: #383835;
+  }
+}
+
+.radar-view-title {
+  margin: 0 0 8px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.radar-view-svg {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+.radar-view-gridline {
+  stroke: var(--gridline);
+  stroke-width: 1;
+}
+
+.radar-view-axis {
+  stroke: var(--axis);
+  stroke-width: 1;
+}
+
+.radar-view-tick {
+  fill: var(--text-muted);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.radar-view-axis-label {
+  fill: var(--text-secondary);
+  font-size: 11px;
+}
+
+.radar-view-label {
+  fill: var(--text-secondary);
+  font-size: 10px;
+}
+
+.radar-view-truth {
+  stroke: var(--text-secondary);
+  stroke-width: 2;
+  fill: none;
+}
+
+.radar-view-sensor {
+  fill: var(--text-primary);
+}
+
+.radar-view-track-ring {
+  fill: var(--surface-1);
+  stroke: none;
+}
+
+.radar-view-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.radar-view-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.radar-view-tooltip {
+  position: absolute;
+  pointer-events: none;
+  background: var(--surface-1);
+  color: var(--text-primary);
+  border: 1px solid var(--gridline);
+  border-radius: 6px;
+  padding: 6px 10px;
+  font-size: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.radar-view-tooltip-title {
+  font-weight: 600;
+  margin-bottom: 2px;
+}
+
+.radar-view-tooltip-line {
+  color: var(--text-secondary);
+  font-variant-numeric: tabular-nums;
+}

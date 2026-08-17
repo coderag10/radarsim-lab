@@ -1,0 +1,74 @@
+.tracks-table {
+  background: var(--panel-surface);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.tracks-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.tracks-table th {
+  text-align: left;
+  color: var(--panel-text-muted);
+  font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 4px 8px;
+  border-bottom: 1px solid var(--panel-border);
+}
+
+.tracks-table td {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--panel-border);
+  color: var(--panel-text);
+}
+
+.tracks-table td.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.tracks-table-empty {
+  color: var(--panel-text-muted);
+  font-size: 13px;
+}
+
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.status-badge::before {
+  content: '';
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+/* Status color lives on the dot only -- text stays a neutral text token
+   (dataviz skill: "text never wears the data color"), which also sides
+   steps the warning hue's low contrast on a light surface. */
+.status-badge {
+  color: var(--panel-text);
+}
+
+.status-active::before {
+  background: var(--status-good);
+}
+
+.status-tentative::before {
+  background: var(--status-warning);
+}
+
+.status-lost::before {
+  background: var(--status-critical);
+}

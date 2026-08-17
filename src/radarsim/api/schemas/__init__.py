@@ -6,6 +6,7 @@ inner loop (see docs/ARCHITECTURE.md "Data contracts").
 """
 
 from radarsim.api.schemas.run import (
+    GroundTruthOut,
     MetricsOut,
     RunRequest,
     RunResponse,
@@ -15,6 +16,7 @@ from radarsim.api.schemas.run import (
 from radarsim.api.schemas.scenario import ScenarioSummary
 
 __all__ = [
+    "GroundTruthOut",
     "MetricsOut",
     "RunRequest",
     "RunResponse",

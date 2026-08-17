@@ -23,6 +23,11 @@ class SensorInfo(BaseModel):
     position: tuple[float, float]
 
 
+class GroundTruthOut(BaseModel):
+    target_id: str
+    position: tuple[float, float]
+
+
 class TrackOut(BaseModel):
     track_id: str
     status: str
@@ -44,6 +49,7 @@ class RunResponse(BaseModel):
     seed: int
     num_targets: int
     sensor: SensorInfo
+    ground_truth: list[GroundTruthOut]
     tracks: list[TrackOut]
     metrics: MetricsOut
 
@@ -56,6 +62,13 @@ class RunResponse(BaseModel):
             seed=result.seed,
             num_targets=result.num_targets,
             sensor=SensorInfo(id=result.sensor_id, position=result.sensor_position),
+            ground_truth=[
+                GroundTruthOut(
+                    target_id=truth.target_id,
+                    position=(float(truth.position[0]), float(truth.position[1])),
+                )
+                for truth in result.ground_truth
+            ],
             tracks=[
                 TrackOut(
                     track_id=track.track_id,

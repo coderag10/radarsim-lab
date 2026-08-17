@@ -18,6 +18,8 @@ def test_create_run_returns_active_tracks_and_metrics() -> None:
     assert body["metrics"]["detection_probability"] == 1.0
     active = [track for track in body["tracks"] if track["status"] == "ACTIVE"]
     assert len(active) == 2
+    assert len(body["ground_truth"]) == 2
+    assert {truth["target_id"] for truth in body["ground_truth"]} == {"target-A", "target-B"}
 
 
 def test_create_run_high_threshold_returns_no_tracks_and_null_rmse() -> None:

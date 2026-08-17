@@ -8,8 +8,9 @@ Built as a research platform, not a demo: ground truth, measurements, detections
 
 The full simulation pipeline is real and working end-to-end: **Scenario → Target Generator → Radar Model → Detection → Tracking (Kalman / EKF / particle filter) → Sensor Fusion → Metrics**, all built incrementally, one phase at a time, each with its own tests (see `docs/ARCHITECTURE.md` for the phase-by-phase build log).
 
-- **Done:** `core`, `targets`, `io` (Phase 1) · `radar` (Phase 2) · `signals` (Phase 3, standalone toolkit) · `detection` (Phase 4) · `tracking` — Kalman filter + association + `Tracker` (Phase 5a), EKF + particle filter (Phase 5b) · `metrics` (Phase 6) · `fusion` (Phase 7) · `cli` (Phase 8a) — run `radarsim <scenario.yaml>` to try it · `api` (Phase 8b) — `POST /runs` etc., see [`src/radarsim/api/README.md`](src/radarsim/api/README.md)
-- **Not yet built:** `dashboard` (Phase 8c, React frontend)
+- **Done:** `core`, `targets`, `io` (Phase 1) · `radar` (Phase 2) · `signals` (Phase 3, standalone toolkit) · `detection` (Phase 4) · `tracking` — Kalman filter + association + `Tracker` (Phase 5a), EKF + particle filter (Phase 5b) · `metrics` (Phase 6) · `fusion` (Phase 7) · `cli` (Phase 8a) — run `radarsim <scenario.yaml>` to try it · `api` (Phase 8b) — `POST /runs` etc., see [`src/radarsim/api/README.md`](src/radarsim/api/README.md) · `dashboard` (Phase 8c) — React + TypeScript UI on top of the API, see [`dashboard/README.md`](dashboard/README.md)
+
+Every phase in `docs/ARCHITECTURE.md`'s "Phased build order" is now built.
 
 Run `uv run radarsim scenarios/basic/two_targets.yaml` for a working example (see [Usage](#usage) below).
 
@@ -29,6 +30,7 @@ Scenario (YAML) → Target Generator → Radar Model → Signal Processing → D
 
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/) (recommended) or plain `pip` + `venv`
+- Node.js 20+ / npm (only needed for `dashboard/`; the simulation engine, CLI, and API are pure Python)
 
 ## Quickstart
 
@@ -104,15 +106,28 @@ curl -X POST http://127.0.0.1:8000/runs \
 
 Interactive docs (Swagger UI) at `http://127.0.0.1:8000/docs` once the server is running. See [`src/radarsim/api/README.md`](src/radarsim/api/README.md) for the full endpoint list.
 
+## Dashboard
+
+A React + TypeScript UI on top of the API: pick a scenario, run it, see ground truth vs. tracked positions on a 2D radar view, a tracks table, and metrics.
+
+```bash
+# with the API already running (see above)
+cd dashboard
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`. See [`dashboard/README.md`](dashboard/README.md) for details (it's a "run and view the result" dashboard — no live/animated playback yet, since that needs a streaming endpoint the API doesn't have).
+
 ## Repository layout
 
 - `src/radarsim/` — the simulation engine: `core`, `targets`, `radar`, `signals`, `detection`, `tracking`, `fusion`, `metrics`, `io`, `types` (all implemented)
 - `src/radarsim/cli/` — command-line entrypoint (implemented, see [Usage](#usage))
 - `src/radarsim/api/` — FastAPI service exposing simulation runs (implemented, see [API](#api))
-- `dashboard/` — React + TypeScript visualization frontend (not yet built, Phase 8c)
+- `dashboard/` — React + TypeScript visualization frontend (implemented, see [Dashboard](#dashboard))
 - `scenarios/` — YAML scenario definitions
 - `experiments/` — notebooks, experiment configs, and results
-- `tests/` — unit, integration, and regression tests (150+ tests across every implemented module; API tests skip gracefully without the `api` extra)
+- `tests/` — unit, integration, and regression tests (150+ Python tests across every implemented module, API tests skip gracefully without the `api` extra; 14+ TypeScript tests under `dashboard/src`)
 - `benchmarks/` — performance benchmarks for computationally expensive algorithms
 
 See [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) for module responsibilities, data contracts, and the phase-by-phase build log.

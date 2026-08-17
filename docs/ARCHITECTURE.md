@@ -83,6 +83,7 @@ Every simulation run is driven by a single seeded RNG owned by `core.rng` and th
 - `tests/regression/` — fixed-seed scenarios with golden-value assertions, catching accidental behavior changes
 - `hypothesis`-based property tests where an algorithm has an invariant worth stating (e.g. a constant-velocity model's velocity is conserved; a Kalman filter's covariance stays positive semi-definite)
 - `benchmarks/` — standalone scripts (outside pytest/CI) for profiling FFT, detection, and tracking hot paths
+- `dashboard/src/**/*.test.tsx` — Vitest + React Testing Library, colocated with the component/module they test (not a separate `tests/` tree, following the JS ecosystem's usual convention rather than the Python side's)
 
 ## Phased build order
 
@@ -100,7 +101,7 @@ Each phase is proposed, reviewed, and implemented separately (one plan, one comm
 8. **Dashboard & API** — `api`, `cli`, `dashboard/`, split in three:
    - ✅ **8a** — `cli`: `radarsim <scenario.yaml>` runs the full pipeline and prints a table or JSON summary
    - ✅ **8b** — `api`: FastAPI service (`GET /scenarios`, `GET /scenarios/{path}`, `POST /runs`, `GET /health`). `POST /runs` is a thin JSON wrapper around `cli.run.run_scenario` — no pipeline logic duplicated. REST only; WebSocket streaming deliberately deferred to when 8c's dashboard exists to define what shape it actually needs, rather than guessing at a protocol now. See [`api` as an optional extra](#api-as-an-optional-extra) below
-   - ⬜ **8c** — `dashboard/`: React + TypeScript frontend
+   - ✅ **8c** — `dashboard/`: React + TypeScript frontend. Select a scenario, run it against the live API, view ground truth vs. tracked positions (2D SVG scatter, no charting library), a tracks table, and metrics. Required extending `RunResult`/`RunResponse` with a `ground_truth` field (the `World.run()` history's final timestep, already computed inside `run_scenario` for `position_rmse` but previously discarded before reaching the CLI/API output) — see [Ground truth in RunResult/RunResponse](#ground-truth-in-runresultrunresponse). "Run and view the result," not live playback — see [`api` as an optional extra](#api-as-an-optional-extra)'s sibling note above on why WebSocket streaming is still deferred
 
 ## Signal processing vs. radar
 
@@ -119,3 +120,9 @@ Making `Tracker` filter-agnostic (an injected measurement-adapter alongside the 
 `api` (Phase 8b) depends on `fastapi`/`pydantic`/`uvicorn`, installed via `uv sync --extra api` — kept separate from `dev` rather than folded in, since it's a genuinely optional piece (someone hacking on the simulation engine shouldn't need a web framework installed). Two things make that split actually work rather than just being aspirational:
 - `tests/unit/test_api_*.py` all start with `pytest.importorskip("fastapi")`, so `uv run pytest` with only `--extra dev` skips them (not fails) — the standard verification command every phase has used stays valid.
 - `pyproject.toml`'s `[[tool.mypy.overrides]]` treats `fastapi`/`pydantic`/`uvicorn` imports as `Any` when unresolved (`ignore_missing_imports`), and separately relaxes `disallow_subclassing_any`/`disallow_untyped_decorators` *only* for `radarsim.api.*` — both are needed together: the first stops mypy erroring on the missing import itself, the second stops `strict`'s other rules from still hard-failing once `BaseModel`/route decorators resolve to `Any`. Installing `--extra api` gets full strict checking against the real stubs either way.
+
+## Ground truth in `RunResult`/`RunResponse`
+
+`cli.run.RunResult` (and, via `RunResponse.from_run_result`, the API) carries `ground_truth: list[GroundTruth]` — the final timestep's truth, the same `history[-1]` `run_scenario` already computes to call `metrics.position_rmse`. Added in Phase 8c because a radar view that can't show tracking accuracy against the truth is a table of numbers with extra steps.
+
+This looks at first glance like it might violate ["the one rule that matters"](#the-one-rule-that-matters) — only `metrics` may hold `TrackEstimate` and `GroundTruth` together. It doesn't: `cli`/`api` aren't algorithm modules bound by that rule. `run_scenario` already holds both in scope today (it calls `metrics.position_rmse(tracks, truth)` directly) — returning truth for *display* alongside the estimate is the same category of thing `metrics` already does, not a new "cheating" pathway into `detection`/`tracking`/`fusion`. Those three still only ever see `RadarMeasurement`/`Detection` — nothing about this changes that.

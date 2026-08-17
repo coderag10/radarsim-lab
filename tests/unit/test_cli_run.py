@@ -33,6 +33,8 @@ def test_run_scenario_default_produces_two_active_tracks() -> None:
     assert result.position_rmse < 2.0
     assert result.num_targets == 2
     assert result.seed == 42
+    assert len(result.ground_truth) == 2
+    assert {truth.target_id for truth in result.ground_truth} == {"target-A", "target-B"}
 
 
 def test_run_scenario_high_threshold_produces_no_tracks_and_none_rmse() -> None:
@@ -50,6 +52,8 @@ def test_format_table_contains_track_ids_and_statuses() -> None:
     for track in result.tracks:
         assert track.track_id in table
         assert track.status.name in table
+    for truth in result.ground_truth:
+        assert truth.target_id in table
     assert "Detection probability" in table
 
 
@@ -67,3 +71,5 @@ def test_format_json_round_trips() -> None:
     assert payload["metrics"]["detection_probability"] == 1.0
     assert len(payload["tracks"]) == len(result.tracks)
     assert payload["tracks"][0]["track_id"] == result.tracks[0].track_id
+    assert len(payload["ground_truth"]) == len(result.ground_truth)
+    assert payload["ground_truth"][0]["target_id"] == result.ground_truth[0].target_id
