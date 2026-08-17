@@ -35,7 +35,7 @@ If an algorithm module needs to import `radarsim.types.state.GroundTruth`, that'
 | `metrics` | Position RMSE (optimal matching), detection probability, false-alarm rate | `TrackEstimate` **and** `GroundTruth` | scalar metrics | — |
 | `io` | Scenario YAML loading/validation, run (de)serialization | YAML/JSON | scenario config, `types` objects | algorithm internals |
 | `cli` | Command-line entrypoint — run a scenario end-to-end, print a table or JSON summary | argv | stdout / exit code | — |
-| `api` | FastAPI service exposing simulation runs (Phase 8b, not yet built) | HTTP requests | JSON | — |
+| `api` | FastAPI service exposing simulation runs, wrapping `cli.run_scenario` | HTTP requests | JSON | — |
 
 ## Data contracts
 
@@ -99,7 +99,7 @@ Each phase is proposed, reviewed, and implemented separately (one plan, one comm
 7. ✅ **Sensor fusion** — `fusion` (`fuse_estimates`, `match_tracks`). Building its integration test exposed and fixed a real bug: `polar_to_cartesian_measurement` had silently assumed the sensor sat at the world origin (see the Phase 7 commit)
 8. **Dashboard & API** — `api`, `cli`, `dashboard/`, split in three:
    - ✅ **8a** — `cli`: `radarsim <scenario.yaml>` runs the full pipeline and prints a table or JSON summary
-   - ⬜ **8b** — `api`: FastAPI service exposing simulation runs
+   - ✅ **8b** — `api`: FastAPI service (`GET /scenarios`, `GET /scenarios/{path}`, `POST /runs`, `GET /health`). `POST /runs` is a thin JSON wrapper around `cli.run.run_scenario` — no pipeline logic duplicated. REST only; WebSocket streaming deliberately deferred to when 8c's dashboard exists to define what shape it actually needs, rather than guessing at a protocol now. See [`api` as an optional extra](#api-as-an-optional-extra) below
    - ⬜ **8c** — `dashboard/`: React + TypeScript frontend
 
 ## Signal processing vs. radar
@@ -113,3 +113,9 @@ Each phase is proposed, reviewed, and implemented separately (one plan, one comm
 - The particle filter against a synthetic linear-Gaussian problem, where its estimate should converge to the same posterior a Kalman filter computes exactly — and does, within 0.01 position / 0.001 velocity using 5000 particles
 
 Making `Tracker` filter-agnostic (an injected measurement-adapter alongside the filter) and giving `ParticleFilter` a per-track home in `Tracker`'s one-shared-filter design are both legitimate future work, not attempted yet.
+
+## `api` as an optional extra
+
+`api` (Phase 8b) depends on `fastapi`/`pydantic`/`uvicorn`, installed via `uv sync --extra api` — kept separate from `dev` rather than folded in, since it's a genuinely optional piece (someone hacking on the simulation engine shouldn't need a web framework installed). Two things make that split actually work rather than just being aspirational:
+- `tests/unit/test_api_*.py` all start with `pytest.importorskip("fastapi")`, so `uv run pytest` with only `--extra dev` skips them (not fails) — the standard verification command every phase has used stays valid.
+- `pyproject.toml`'s `[[tool.mypy.overrides]]` treats `fastapi`/`pydantic`/`uvicorn` imports as `Any` when unresolved (`ignore_missing_imports`), and separately relaxes `disallow_subclassing_any`/`disallow_untyped_decorators` *only* for `radarsim.api.*` — both are needed together: the first stops mypy erroring on the missing import itself, the second stops `strict`'s other rules from still hard-failing once `BaseModel`/route decorators resolve to `Any`. Installing `--extra api` gets full strict checking against the real stubs either way.

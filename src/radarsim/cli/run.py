@@ -107,7 +107,7 @@ def run_scenario(
     rmse = position_rmse(active_tracks, history[-1]) if active_tracks else None
 
     return RunResult(
-        scenario_path=str(scenario_path),
+        scenario_path=scenario_path.as_posix(),
         duration=config.duration,
         timestep=config.timestep,
         seed=config.seed,

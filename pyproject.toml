@@ -30,6 +30,7 @@ api = [
     "fastapi>=0.111",
     "uvicorn[standard]>=0.30",
     "pydantic>=2.7",
+    "httpx>=0.27",
 ]
 notebooks = [
     "jupyter>=1.0",
@@ -55,6 +56,25 @@ python_version = "3.11"
 strict = true
 packages = ["radarsim"]
 mypy_path = "src"
+
+[[tool.mypy.overrides]]
+# api's dependencies (fastapi, pydantic, uvicorn) are an optional
+# extra -- when not installed, treat their imports as Any instead of
+# a hard failure, so `uv sync --extra dev` (no `api`) can still run
+# `mypy src` cleanly. Installing `--extra api` gets full strict
+# checking against the real stubs.
+module = ["fastapi", "fastapi.*", "pydantic", "pydantic.*", "uvicorn", "uvicorn.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# strict's disallow_subclassing_any/disallow_untyped_decorators would
+# otherwise still hard-fail on api/'s BaseModel subclasses and
+# @router.get/@app.get decorators once those resolve to Any (see
+# above) -- relaxed only for api/, only relevant when `api` isn't
+# installed.
+module = "radarsim.api.*"
+disallow_subclassing_any = false
+disallow_untyped_decorators = false
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
