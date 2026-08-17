@@ -2,6 +2,7 @@
 
 from radarsim.tracking.association import AssociationStrategy, NearestNeighbor
 from radarsim.tracking.measurement_conversion import polar_to_cartesian_measurement
+from radarsim.tracking.polar_observation import polar_observation, polar_observation_jacobian
 from radarsim.tracking.prediction import constant_velocity_transition, predict_state
 from radarsim.tracking.tracker import Tracker
 
@@ -10,6 +11,8 @@ __all__ = [
     "NearestNeighbor",
     "Tracker",
     "constant_velocity_transition",
+    "polar_observation",
+    "polar_observation_jacobian",
     "polar_to_cartesian_measurement",
     "predict_state",
 ]
